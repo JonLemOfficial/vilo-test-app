@@ -1,4 +1,4 @@
-package com.vilotestapp
+package com.jonlemofficial.vilotestapp
 
 import android.app.Application
 import android.content.res.Configuration

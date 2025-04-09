@@ -21,7 +21,7 @@ extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
   }
 }
 
-rootProject.name = 'vilotestapp'
+rootProject.name = 'Vilo Test App'
 
 dependencyResolutionManagement {
   versionCatalogs {
