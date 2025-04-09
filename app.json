@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Vilo Test App",
+    "slug": "vilo-test-app",
+    "version": "1.0.0",
+    "plugins": [
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#00548d",
+          "image": "./src/assets/img/splash.png",
+          "imageWidth": 700,
+          "resizeMode": "cover"
+        }
+      ]
+    ],
+    "android": {
+      "package": "com.jonlemofficial.vilotestapp",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/img/adaptive-icon.png",
+        "backgroundColor": "#00548d"
+      }
+    },
+    "web": {
+      "favicon": "./src/assets/img/favicon-512x512.png"
+    }
+  }
+}
