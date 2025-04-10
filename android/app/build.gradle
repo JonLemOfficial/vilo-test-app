@@ -106,6 +106,7 @@ android {
         debug {
             signingConfig signingConfigs.debug
         }
+        
         release {
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
@@ -129,7 +130,7 @@ android {
 // Apply static values from `gradle.properties` to the `android.packagingOptions`
 // Accepts values in comma delimited lists, example:
 // android.packagingOptions.pickFirsts=/LICENSE,**/picasa.ini
-["pickFirsts", "excludes", "merges", "doNotStrip"].each { prop ->
+[ "pickFirsts", "excludes", "merges", "doNotStrip" ].each { prop ->
     // Split option: 'foo,bar' -> ['foo', 'bar']
     def options = (findProperty("android.packagingOptions.$prop") ?: "").split(",");
     // Trim all elements in place.
@@ -137,7 +138,7 @@ android {
     // `[] - ""` is essentially `[""].filter(Boolean)` removing all empty strings.
     options -= ""
 
-    if (options.length > 0) {
+    if ( options.length > 0 ) {
         println "android.packagingOptions.$prop += $options ($options.length)"
         // Ex: android.packagingOptions.pickFirsts += '**/SCCS/**'
         options.each {
@@ -154,21 +155,22 @@ dependencies {
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";
     def isWebpAnimatedEnabled = (findProperty('expo.webp.animated') ?: "") == "true";
 
-    if (isGifEnabled) {
+    if ( isGifEnabled ) {
         // For animated gif support
         implementation("com.facebook.fresco:animated-gif:${reactAndroidLibs.versions.fresco.get()}")
     }
 
-    if (isWebpEnabled) {
+    if ( isWebpEnabled ) {
         // For webp support
         implementation("com.facebook.fresco:webpsupport:${reactAndroidLibs.versions.fresco.get()}")
-        if (isWebpAnimatedEnabled) {
+        
+        if ( isWebpAnimatedEnabled ) {
             // Animated webp support
             implementation("com.facebook.fresco:animated-webp:${reactAndroidLibs.versions.fresco.get()}")
         }
     }
 
-    if (hermesEnabled.toBoolean()) {
+    if ( hermesEnabled.toBoolean() ) {
         implementation("com.facebook.react:hermes-android")
     } else {
         implementation jscFlavor

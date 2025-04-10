@@ -1,6 +1,6 @@
 // ** Dependencies
 import 'react-native-gesture-handler';
-import React, { Component, useState, useEffect, useCallback } from 'react';
+import React, { Component, useState, useEffect, useCallback, useContext, useLayoutEffect } from 'react';
 import {
   StyleSheet,
   Linking,
@@ -12,16 +12,18 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  StatusBar,
   ImageBackground
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { TextInput, PaperProvider } from 'react-native-paper';
+import { TextInput, PaperProvider, Searchbar, TouchableRipple, RadioButton } from 'react-native-paper';
+import Animated from 'react-native-reanimated';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as NavigationBar from 'expo-navigation-bar';
-import { FontAwesome6 as Fa } from '@expo/vector-icons';
+import { FontAwesome6 as Fa, FontAwesome5 as Fa5 } from '@expo/vector-icons';
 import axios from 'axios';
 
 // ** Constants
@@ -30,7 +32,6 @@ import URLS from './constants/urls';
 
 // ** Utils
 function transformHEXToRGBA(hex, opacity) {
-  
   // Verifica que el formato hexadecimal sea válido
   const validHex = /^#?([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/;
   
@@ -55,16 +56,138 @@ function transformHEXToRGBA(hex, opacity) {
   return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 }
 
-const ViloAuthenticationContext = React.createContext({});
+const DEFAULT_VILO_AUTH_STATE_VALUES = {
+  token: null,
+  isLoggedIn: false,
+  user: {
+    id: null,
+    username: null,
+    email: null,
+  }
+};
+
+const ViloAuthenticationContext = React.createContext(DEFAULT_VILO_AUTH_STATE_VALUES);
 const Stack = createStackNavigator();
 
 function ViloAuthProvider({ children }) {
+
+  const [ authData, setAuthData ] = useState(DEFAULT_VILO_AUTH_STATE_VALUES);
+
+  useEffect(() => {
+  
+    // Get the token from async storage
+    AsyncStorage.getItem("authData").then(authData => {
+      if ( authData ) {
+        setAuthData(JSON.parse(authData));
+      }
+    });
+
+  }, [  ]);
+
+  const logIn = async ( credentials, callback ) => {
+  
+    try {
+      if ( credentials['email'] === 'sincere@april.biz' && credentials['password'] === '123456' ) {
+        const successAuthData = {
+          token: 'abcdef',
+          isLoggedIn: true,
+          user: {
+            id: 1,
+            username: 'sincere',
+            email: 'sincere@april.biz'
+          }
+        };
+
+        callback(successAuthData, false);
+        await AsyncStorage.setItem("authData", JSON.stringify(successAuthData));
+        setAuthData(successAuthData);
+      } else {
+        callback(null, true);
+      }
+
+      // const response = await axios.post("https://eden.slasdevelopments.com/api/auth/login", {
+      //   email,
+      //   password,
+      // });
+
+      // if ( response ) {
+      //   if ( __DEV__ ) console.log("Respuesta de API", response.data);
+      //   const { token, data } = response.data;
+      //   await AsyncStorage.setItem(
+      //     "authData",
+      //     JSON.stringify({ token, isAuthenticated: true, data })
+      //   );
+
+      //   setAuthData({ token, isAuthenticated: true, data });
+      // }
+    } catch (error) {
+        if ( __DEV__ ) console.log(`Login error ${error}`);
+        
+        Alert.alert(
+          "Authentication Error",
+          `Ha ocurrido un error inesperado. \n\nINF: ${error.message}`, 
+          [
+            {
+              text: "Ok",
+              onPress: () => void 0
+            }
+          ]
+        );
+    }
+  };
+
+  const logOut = () => {
+    AsyncStorage.removeItem("authData");
+    setAuthData(DEFAULT_VILO_AUTH_STATE_VALUES);
+    // const { token } = authData;
+    
+    // axios
+    //   .get("https://eden.slasdevelopments.com/api/auth/logout", {
+    //     headers: {
+    //       Authorization: `Bearer ${token}`,
+    //     },
+    //   })
+    //   .then((response) => {
+    //     if (response.status === 200) {
+    //       // La solicitud de cierre de sesión se realizó con éxito
+    //       AsyncStorage.removeItem("authData");
+    //       setAuthData(DEFAULT_AUTH_STATE_VALUES);
+    //     } else {
+    //       // La solicitud de cierre de sesión falló
+    //       if ( __DEV__ ) {
+    //         console.log(response.status);
+    //         console.log(response.data);
+    //       }
+    //     }
+    //   })
+    //   .catch((error) => {
+    //     if ( __DEV__ ) console.log(`isLoading in error ${error}`);
+    //     setAuthData(DEFAULT_AUTH_STATE_VALUES);
+    //   });
+  };
+
   return (
-    <ViloAuthenticationContext.Provider value={{ isLoggedIn: false, user: null }}>
+    <ViloAuthenticationContext.Provider value={{ authData, logIn, logOut }}>
       { children }
     </ViloAuthenticationContext.Provider>
   );
 }
+
+// ** Hooks
+
+const useViloAuth = () => {
+
+  const { authData, logIn, logOut } = useContext(ViloAuthenticationContext);
+
+  return {
+    isLoggedIn: authData.isLoggedIn,
+    token: authData.token,
+    user: authData.user,
+    logIn,
+    logOut,
+  };
+
+};
 
 class App extends Component {
 
@@ -153,10 +276,45 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 30,
     width: '100%'
+  },
+  searchBar: {
+    width: "100%",
+    backgroundColor: '#def0ff',
+    // color: PALETTE_COLORS.BLUEGEM,
+    // borderRadius: 50,
+    // borderStyle: "solid",
+    // borderColor: PALETTE_COLORS.BLUEGEM,
+  },
+  consultorioInfoImage: {
+    backgroundColor: "#dfdfdf",
+    width: "15%",
+    height: "100%",
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  consultorioInfoText: {
+    width: "85%",
+    alignItems: "flex-start",
+    paddingTop: 10,
+    paddingBottom: 10,
+    paddingLeft: 20,
+    paddingRight: 20,
+  },
+  highlight: {
+    backgroundColor: 'yellow'
   }
 });
 
 function ViloTestApp() {
+
+  const { isLoggedIn } = useViloAuth();
+
+  if ( __DEV__ ) {
+    useEffect(() => {
+      console.log(isLoggedIn);
+    }, [ isLoggedIn ]);
+  }
 
   return (
     <NavigationContainer>
@@ -178,19 +336,26 @@ function ViloTestApp() {
               color: 'white'
             },
             headerRight: () => {
-
+              
+              const { logOut } = useViloAuth();
               const navigation = useNavigation();
+
+              const handleLogOutPress = () => {
+                logOut();
+                navigation.navigate('Login');
+              };
 
               return (
                 <View style={{ marginRight: 20 }}>
-                  <Pressable style={{ display: 'flex', flexDirection: 'row', gap: 15 }} onPress={() => navigation.navigate('Login')}>
+                  <Pressable style={{ display: 'flex', flexDirection: 'row', gap: 15 }} onPress={handleLogOutPress}>
                     <Text style={{ color: 'white' }}>Sincere</Text>
                     <Fa name='right-from-bracket' color="white" size={20}/>
                   </Pressable>
                 </View>
               );
             }
-          }}/>
+          }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -200,6 +365,8 @@ function ViloLoginScreen({ navigation }) {
 
   NavigationBar.setBackgroundColorAsync(COLORS.VILO_BRAND_COLOR);
 
+  const { logIn, isLoggedIn } = useViloAuth();
+
   const [ isSubmitting, setSubmitting ] = useState(false);
   const [ loginFeedback, setLoginFeedback ] = useState(null);
   const [ showPassword, setShowPassword ] = useState(true);
@@ -208,6 +375,10 @@ function ViloLoginScreen({ navigation }) {
     email: '',
     password: ''
   });
+
+  useLayoutEffect(() => {
+    if ( isLoggedIn ) navigation.navigate('Home');
+  }, [ isLoggedIn ]);
 
   useEffect(() => {
     if ( loginFeedback?.success ) {
@@ -228,9 +399,11 @@ function ViloLoginScreen({ navigation }) {
     let feedback = null;
     setSubmitting(true);
     setLoginFeedback(null);
-
-    if ( credentials['email'] === 'sincere@april.biz' ) {
-      if ( credentials['password'] === '123456' ) {
+    logIn({
+      email: credentials['email'],
+      password: credentials['password']
+    }, ( success, err ) => {
+      if ( success ) {
         feedback = {
           success: true,
           message: 'Login was success',
@@ -240,14 +413,10 @@ function ViloLoginScreen({ navigation }) {
           success: false,
           message: 'Incorrect username or password',
         };
-      } 
-    } else {
-      feedback = {
-        success: false,
-        message: 'Incorrect username or password',
-      };
-    }
-  
+      }
+
+    });
+
     setTimeout(() => {
       setSubmitting(false);
       setLoginFeedback(feedback);
@@ -268,7 +437,7 @@ function ViloLoginScreen({ navigation }) {
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <StatusBar style="light" backgroundColor={COLORS.VILO_BRAND_COLOR}/>
+      <StatusBar backgroundColor={COLORS.VILO_BRAND_COLOR}/>
       <ImageBackground source={require('./assets/img/login-bg.jpg')} resizeMode="cover" style={{ flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center', zIndex: 20 }}>
         <View style={{ position: 'absolute', bottom: 30, alignItems: 'center' }}>
           <Pressable onPress={handleOpenLink(URLS.VILO_APP_JONLEM_WEBSITE)} >
@@ -448,33 +617,105 @@ function ViloTextInput ({
   );
 };
 
-function TodoItem({ title }) {
+function TodoItem({ id, title, completed }) {
+
   return (
-    <View style={{ backgroundColor: 'white', borderTopColor: '#d2d2d2', borderTopWidth: 1 }}>
-      <Text style={[ styles.paragraph, { color: 'black' } ]}>
-        { title }
-      </Text>
-    </View>
+    <TouchableRipple
+      style={{
+        backgroundColor: completed ? '#e7ffe4' : 'white',
+        borderTopColor: '#d2d2d2',
+        borderTopWidth: 1,
+        paddingVertical: 10,
+        paddingHorizontal: 20
+      }}
+    >
+      <View style={{ flexDirection: 'row' }}>
+        {completed && (
+          <View
+            style={{
+              position: "absolute",
+              right: 0,
+              width: 30,
+              height: 30,
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              // borderBottomWidth: i === consultorios.length - 1 ? 0 : 2,
+              // borderBottomColor: "gray"
+            }}
+          >
+            <Text style={{ width: 23, height: 23, padding: 5, backgroundColor: 'green' , borderRadius: 30, justifyContent: 'center', textAlign: 'center' }}>
+              <Fa style={{ position: 'relative' }} name="check" color="white" size={13}/>
+            </Text>
+          </View>
+        )}
+        <View>
+          <Text style={[ styles.paragraph, { color: 'black', marginBottom: 3, width: '80%' } ]}>
+            {id}: { title }
+          </Text>
+          <Text style={[ styles.paragraph, { color: 'black', marginBottom: 3, width: '80%' } ]}>
+            Completed: { completed ? 'Yes' : 'No' }
+          </Text>
+        </View>
+      </View>
+    </TouchableRipple>
   );
 }
 
 function ViloHomeScreen({ navigation }) {
 
+  const PAGE_SIZE = 10;
+
   const [ todos, setTodos ] = useState([]);
+  const [ todosAllReached, setTodosAllReached ] = useState(false);
+  const [ showBy, setShowBy ] = useState('all');
+  const [ searchingText, setSearchingText ] = useState('');
+  const [ page, setPage ] = useState(1);
+  const [ isSearching, setIsSearching ] = useState(false);
   const [ isFetchingTodos, setIsFetchingTodos ] = useState(true);
 
   useEffect(() => {
-    if ( isFetchingTodos ) fetchTodos();
-  }, [ isFetchingTodos ]);
+    fetchTodos();
+  }, [ page ]);
+
+  const refreshTodos = useCallback(async () => {
+    try {
+      setTodos([]);
+      setTodosAllReached(false);
+    } catch ( err ) {
+      
+    } finally {
+      if ( page !== 1 ) {
+        setPage(1);
+        return;
+      }
+
+      fetchTodos();
+    }
+  }, [ todos ]);
 
   const fetchTodos = async () => {
     let response;
-    
+
     try {
-      response = await axios.get('https://jsonplaceholder.typicode.com/todos');
+      setIsFetchingTodos(true);
+      response = await axios.get('https://jsonplaceholder.typicode.com/todos'
+        , {
+          params: {
+            _page: page,
+            _limit: PAGE_SIZE,
+            // userId: 20
+          }
+        }
+      );
 
       if ( response ) {
-        setTodos(response.data);
+        if ( response.data.length === 0 ) setTodosAllReached(true);
+
+        setTodos(todos => [
+          ...todos,
+          ...response.data
+        ]);
       }
     } catch ( err ) {
       Alert.alert(
@@ -482,21 +723,125 @@ function ViloHomeScreen({ navigation }) {
         'There was as an error while fetching TODOs.'
       );
     } finally {
-      setIsFetchingTodos(!isFetchingTodos);
+      setIsFetchingTodos(false);
     }
   };
 
+  const fetchMoreTodos = () => {
+    if ( ! isFetchingTodos ) {
+      if ( todos.length > 0 && ! todosAllReached ) {
+        setPage(prevPage => prevPage + 1);
+      }
+    }
+  };
+
+  const searchFilter = useCallback(text => {
+    setSearchingText(text);
+
+    if ( searchingText !== "" ) {
+      setIsSearching(true);
+    } else {
+      setIsSearching(false);
+    }
+
+  }, [ searchingText ]);
+
+  const searchingTodos = isSearching
+    && todos.filter(t => t.title.match(new RegExp(searchingText, "i")));    
+
   return (
-    <SafeAreaView style={[ { backgroundColor: 'white', width: '100%' } ]}>
-      {isFetchingTodos && <ActivityIndicator color={COLORS.VILO_BRAND_COLOR}/>}
+    <SafeAreaView style={{ flex: 1 }}>
+      <View style={{ backgroundColor: '#def0ff' }}>
+        <View>
+          <Searchbar
+            style={styles.searchBar}
+            placeholder="Search"
+            onChangeText={searchFilter}
+            value={searchingText}
+          />
+        </View>
+        <View
+          style={{
+            position: 'relative',
+            paddingVertical: 8,
+            paddingHorizontal: 20,
+            flexDirection: 'row',
+            alignItems: 'center'
+          }}
+        >
+          <Text>Show by: </Text>
+          <Text>All</Text>
+          <RadioButton
+            value="all"
+            color={COLORS.VILO_BRAND_COLOR}
+            status={showBy === 'all' ? 'checked' : 'unchecked'}
+            onPress={() => setShowBy('all')}
+          />
+          <Text>Completed </Text>
+          <RadioButton
+            value="completed"
+            color={COLORS.VILO_BRAND_COLOR}
+            status={showBy === 'completed' ? 'checked' : 'unchecked'}
+            onPress={() => setShowBy('completed')}
+          />
+          <Text>Uncompleted:</Text>
+          <RadioButton
+            value="uncompleted"
+            color={COLORS.VILO_BRAND_COLOR}
+            status={showBy === 'uncompleted' ? 'checked' : 'unchecked'}
+            onPress={() => setShowBy('uncompleted')}
+          />
+          <Animated.View style={{ position: 'absolute', right: 20 }}>
+            <Pressable onPress={refreshTodos}>
+              <Fa5 name="sync" color="black" size={17}/>
+            </Pressable>
+          </Animated.View>
+        </View>
+      </View>
+      {/* {isFetchingTodos && <ActivityIndicator color={COLORS.VILO_BRAND_COLOR} size={48}/>} */}
       {!isFetchingTodos && todos.length === 0 && <Text>There are no TODOs.</Text>}
-      {todos.length > 0  && !isFetchingTodos && (
+      {/* {todos.length > 0 && !isFetchingTodos && ( */}
         <FlatList
-          data={todos}
+          data={searchingTodos || todos}
           keyExtractor={todo => todo.id}
-          renderItem={( todo ) => <TodoItem title={todo.item.title} />}
+          onEndReached={fetchMoreTodos}
+          onEndReachedThreshold={0}
+          ListFooterComponent={isFetchingTodos && <ActivityIndicator color={COLORS.VILO_BRAND_COLOR} size={48}/>}
+          ListFooterComponentStyle={{ paddingVertical: 40 }}
+          renderItem={({ item }) => {
+            if ( showBy === 'all' ) {
+              return (
+                <TodoItem
+                  title={item.title}
+                  id={item.id}
+                  completed={item.completed}
+                />
+              );
+            }
+
+            if ( showBy === 'completed' && item.completed ) {
+              return (
+                <TodoItem
+                  title={item.title}
+                  id={item.id}
+                  completed={item.completed}
+                />
+              );
+            }
+
+            if ( showBy === 'uncompleted' && !item.completed ) {
+              return (
+                <TodoItem
+                  title={item.title}
+                  id={item.id}
+                  completed={item.completed}
+                />
+              );
+            }
+
+          }}
         />
-      )}
+      {/* )} */}
     </SafeAreaView>
   );
 }
