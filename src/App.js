@@ -27,11 +27,9 @@ import axios from 'axios';
 // ** Constants
 import COLORS from './constants/colors';
 import URLS from './constants/urls';
-import colors from './constants/colors';
-
 
 // ** Utils
-export function transformHEXToRGBA(hex, opacity) {
+function transformHEXToRGBA(hex, opacity) {
   
   // Verifica que el formato hexadecimal sea válido
   const validHex = /^#?([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/;
@@ -230,7 +228,6 @@ function ViloLoginScreen({ navigation }) {
     let feedback = null;
     setSubmitting(true);
     setLoginFeedback(null);
-    console.log(credentials);
 
     if ( credentials['email'] === 'sincere@april.biz' ) {
       if ( credentials['password'] === '123456' ) {
@@ -255,7 +252,6 @@ function ViloLoginScreen({ navigation }) {
       setSubmitting(false);
       setLoginFeedback(feedback);
     }, 2000);
-
   };
 
   const handleOpenLink = ( url ) => useCallback(async () => {
@@ -424,6 +420,7 @@ function ViloTextInput ({
   onFocus,
   inputMode = "text"
 }) {
+  
   const [ width ] = useState(wLong);
   const [ showPassword, setShowPassword ] = useState(secureTextEntry);
 
