@@ -149,7 +149,9 @@ const styles = StyleSheet.create({
   },
   textInput: {
     backgroundColor: transformHEXToRGBA(COLORS.VILO_BRAND_COLOR, 0.75),
+    flexDirection: 'row',
     justifyContent: 'center',
+    alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 30,
     width: '100%'
@@ -174,7 +176,6 @@ function ViloTestApp() {
             headerLeft: null,
             headerTitleAlign: 'center',
             headerTitle: 'Todos',
-            // headerTintColor: 'white',
             headerTitleStyle: {
               color: 'white'
             },
@@ -271,7 +272,7 @@ function ViloLoginScreen({ navigation }) {
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <StatusBar style="light" backgroundColor={COLORS.VILO_BRAND_COLOR} />
+      <StatusBar style="light" backgroundColor={COLORS.VILO_BRAND_COLOR}/>
       <ImageBackground source={require('./assets/img/login-bg.jpg')} resizeMode="cover" style={{ flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center', zIndex: 20 }}>
         <View style={{ position: 'absolute', bottom: 30, alignItems: 'center' }}>
           <Pressable onPress={handleOpenLink(URLS.VILO_APP_JONLEM_WEBSITE)} >
@@ -283,7 +284,6 @@ function ViloLoginScreen({ navigation }) {
               style={styles.jonlemlogo}
               alt="JonLem Logo"
             />
-            
           </Pressable>
 
           <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 20, marginTop: 20, zIndex: 30   }}>
@@ -335,10 +335,10 @@ function ViloLoginScreen({ navigation }) {
               textColor="white"
               underlineColor="none"
               activeOutlineColor="none"
-              cursorColor='white'
+              cursorColor="white"
               activeUnderlineColor="transparent"
-              editable={!isSubmitting}
-              style={[ styles.textInput, { opacity: isSubmitting ? 0.4 : 1 } ]}
+              disabled={isSubmitting}
+              style={[ styles.textInput, { opacity: isSubmitting ? 0.6 : 1 } ]}
               placeholder="email"
               placeholderTextColor={COLORS.VILO_PLACEHOLDER_GRAY_TEXT}
               onChangeText={handleCredentialsChangeText('email')}
@@ -353,19 +353,20 @@ function ViloLoginScreen({ navigation }) {
               textColor="white"
               underlineColor="none"
               activeOutlineColor="none"
-              cursorColor='white'
+              cursorColor="white"
               activeUnderlineColor="transparent"
               secureTextEntry={showPassword}
-              editable={!isSubmitting}
-              style={[ styles.textInput, { opacity: isSubmitting ? 0.5 : 1 } ]}
+              disabled={isSubmitting}
+              style={[ styles.textInput, { opacity: isSubmitting ? 0.6 : 1 } ]}
               placeholder="password"
               placeholderTextColor={COLORS.VILO_PLACEHOLDER_GRAY_TEXT}
               onChangeText={handleCredentialsChangeText('password')}
               value={credentials['password']}
               right={
                 <TextInput.Icon
+                  style={{ marginTop: 25 }}
                   color="white"
-                  icon={ showPassword ? "eye" : "eye-off" }
+                  icon={showPassword ? "eye" : "eye-off"}
                   onPress={() => setShowPassword(!showPassword)}
                 />
               }
@@ -385,9 +386,21 @@ function ViloLoginScreen({ navigation }) {
             >
               {loginFeedback.message}
             </Text>
-          ) || null}
+          )}
           
-          <TouchableOpacity disabled={isSubmitting} style={styles.button} onPress={handleSubmit}>
+          <TouchableOpacity
+            disabled={isSubmitting || credentials['email'] === '' || credentials['password'] === '' }
+            onPress={handleSubmit}
+            style={[
+              styles.button,
+              {
+                opacity:
+                  credentials['email'] === '' || credentials['password'] === ''
+                  ? 0.6
+                  : 1
+              }
+            ]}
+          >
             {isSubmitting
               ? <ActivityIndicator color={COLORS.VILO_BRAND_COLOR}/>
               : <Text style={{ textAlign: 'center', color: COLORS.VILO_BRAND_COLOR }}>Log in</Text>
